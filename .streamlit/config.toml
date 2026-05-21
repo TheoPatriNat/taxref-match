@@ -1,0 +1,4 @@
+ ```toml
+   [server]
+   maxUploadSize = 400
+   ```
