@@ -36,12 +36,15 @@ def clean_name(name):
 
 @st.cache_data(show_spinner="Chargement du TaxRef en mémoire… (une seule fois par session)")
 def load_taxref(file_bytes):
+    cols_needed = ["LB_NOM", "CD_NOM", "CD_REF", "RANG", "FAMILLE", "NOM_COMPLET", "NOM_VALIDE"]
+    
     taxref = pd.read_csv(
         io.BytesIO(file_bytes),
         sep="\t",
         quotechar='"',
         dtype=str,
         low_memory=False,
+        usecols=lambda c: c in cols_needed,  # ← charge uniquement les colonnes utiles
     )
 
     if "LB_NOM" not in taxref.columns:
