@@ -1,4 +1,2 @@
- ```toml
-   [server]
-   maxUploadSize = 400
-   ```
+[server]
+maxUploadSize = 400
