@@ -9,11 +9,11 @@ import io
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="TaxRef Match",
-    page_icon="🌿",
+    page_icon="🔎",
     layout="wide",
 )
 
-st.title("🌿 TaxRef Match — v18")
+st.title("🔎 TaxRef Match - v18")
 st.markdown(
     "Outil de réconciliation de noms d'espèces avec le référentiel **TaxRef v18**. "
     "Uploadez vos deux fichiers, lancez le matching, puis téléchargez le résultat."
@@ -24,7 +24,7 @@ st.divider()
 # ─────────────────────────────────────────────
 # Contenu du README embarqué
 # ─────────────────────────────────────────────
-README_MD = """# 🌿 TaxRef Match - Guide utilisateur
+README_MD = """# TaxRef Match - Guide utilisateur
 
 ## I. Comment utiliser l'outil
 
