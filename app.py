@@ -259,89 +259,92 @@ def validate_classification(user_val, taxref_row):
 def match_taxref(df, taxref):
     df = df.copy()
 
-    # Normalisation nom
     col_nom = "nom_cite" if "nom_cite" in df.columns else "Nom_cite"
     df["nom_clean"] = df[col_nom].apply(clean_name)
 
-    # Gestion colonne fk
-    has_fk = "fk" in df.columns
-
-    # Gestion colonne Classification
+    has_fk      = "fk" in df.columns
     has_classif = "Classification" in df.columns
 
-    # ── Match exact ──────────────────────────────
-    merge_cols = ["nom_clean", "CD_NOM", "CD_REF", "RANG",
-                  "FAMILLE", "NOM_COMPLET", "NOM_VALIDE"] + RANK_COLS
-    merged = df.merge(taxref[merge_cols], on="nom_clean", how="left")
+    taxref_cols = ["nom_clean", "CD_NOM", "CD_REF", "RANG",
+                   "FAMILLE", "NOM_COMPLET", "NOM_VALIDE"] + RANK_COLS
 
-    for col in ["Type", "Similarité"]:
-        if col not in merged.columns:
-            merged[col] = pd.NA
+    # ── Match exact ──────────────────────────────────────────────────────
+    merged = df.merge(taxref[taxref_cols], on="nom_clean", how="left")
 
-    # ── Fuzzy matching pour les non matchés ──────
-    missing_mask = merged["CD_NOM"].isna() | (merged["CD_NOM"] == "")
-    missing = merged[missing_mask].copy()
+    exact_mask = merged["CD_NOM"].notna() & (merged["CD_NOM"] != "")
+    merged.loc[exact_mask,  "Type"]       = "Exact"
+    merged.loc[exact_mask,  "Similarité"] = 100.0
+    merged.loc[~exact_mask, "Type"]       = pd.NA
+    merged.loc[~exact_mask, "Similarité"] = pd.NA
 
-    if len(missing) > 0:
+    # ── Fuzzy matching ───────────────────────────────────────────────────
+    missing_names = (
+        merged.loc[~exact_mask, "nom_clean"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    if missing_names:
         genus_index = build_genus_index(taxref)
 
         progress_bar = st.progress(0, text="Fuzzy matching en cours…")
-        total = len(missing)
-        fuzzy_info = []
+        total = len(missing_names)
+        fuzzy_records = []
 
-        for i, name in enumerate(missing["nom_clean"]):
-            if name and name.strip():
-                match, score = fuzzy_with_constraint(name, genus_index, threshold=80)
-            else:
-                match, score = None, 0
-            fuzzy_info.append((name, match, score))
-            progress_bar.progress((i + 1) / total, text=f"Fuzzy matching… {i+1}/{total}")
-
+        for i, name in enumerate(missing_names):
+            match, score = fuzzy_with_constraint(name, genus_index, threshold=80)
+            fuzzy_records.append({
+                "nom_clean":   name,
+                "match_clean": match,
+                "Similarité":  float(score),
+            })
+            progress_bar.progress((i + 1) / total,
+                                   text=f"Fuzzy matching… {i+1}/{total}")
         progress_bar.empty()
 
-        fuzzy_df = pd.DataFrame(fuzzy_info, columns=["nom_clean", "match_clean", "similarity"])
-        fuzzy_join = fuzzy_df.merge(
-            taxref,
-            left_on="match_clean",
-            right_on="nom_clean",
-            suffixes=("", "_tax"),
-            how="left",
+        fuzzy_df = pd.DataFrame(fuzzy_records)
+
+        # Jointure fuzzy_df → taxref pour récupérer les métadonnées
+        taxref_renamed = taxref[taxref_cols].rename(columns={"nom_clean": "match_clean"})
+        fuzzy_enriched = fuzzy_df.merge(taxref_renamed, on="match_clean", how="left")
+
+        # Marquer les non réconciliés (match_clean = None)
+        no_match = fuzzy_enriched["match_clean"].isna()
+        fuzzy_enriched.loc[no_match,  "Type"] = "Non réconcilié"
+        fuzzy_enriched.loc[~no_match, "Type"] = "Flou"
+        for col in ["CD_NOM", "CD_REF", "RANG", "FAMILLE",
+                    "NOM_COMPLET", "NOM_VALIDE"] + RANK_COLS:
+            fuzzy_enriched.loc[no_match, col] = ""
+
+        # Colonnes à reporter dans merged
+        fuzzy_cols = (
+            ["nom_clean", "match_clean", "Similarité", "Type",
+             "CD_NOM", "CD_REF", "RANG", "FAMILLE",
+             "NOM_COMPLET", "NOM_VALIDE"]
+            + RANK_COLS
         )
 
-        for _, row in fuzzy_join.iterrows():
-            idxs = merged[merged["nom_clean"] == row["nom_clean"]].index
-            for idx in idxs:
-                if row.get("match_clean") is None or pd.isna(row.get("match_clean")):
-                    # Aucun match acceptable → Non réconcilié
-                    merged.at[idx, "CD_NOM"]      = ""
-                    merged.at[idx, "CD_REF"]       = ""
-                    merged.at[idx, "RANG"]         = ""
-                    merged.at[idx, "FAMILLE"]      = ""
-                    merged.at[idx, "NOM_COMPLET"]  = ""
-                    merged.at[idx, "NOM_VALIDE"]   = ""
-                    merged.at[idx, "Similarité"]   = 0
-                    merged.at[idx, "Type"]         = "Non réconcilié"
-                    for rc in RANK_COLS:
-                        merged.at[idx, rc] = ""
-                else:
-                    merged.at[idx, "CD_NOM"]      = row.get("CD_NOM", "")
-                    merged.at[idx, "CD_REF"]       = row.get("CD_REF", "")
-                    merged.at[idx, "RANG"]         = row.get("RANG", "")
-                    merged.at[idx, "FAMILLE"]      = row.get("FAMILLE", "")
-                    merged.at[idx, "NOM_COMPLET"]  = row.get("NOM_COMPLET", "")
-                    merged.at[idx, "NOM_VALIDE"]   = row.get("NOM_VALIDE", "")
-                    merged.at[idx, "Similarité"]   = row.get("similarity", 0)
-                    merged.at[idx, "Type"]         = "Flou"
-                    for rc in RANK_COLS:
-                        merged.at[idx, rc] = row.get(rc, "")
+        # Supprimer les colonnes fuzzy de merged avant de les réinjecter
+        cols_to_drop = [c for c in fuzzy_cols
+                        if c != "nom_clean" and c in merged.columns]
+        merged = merged.drop(columns=cols_to_drop)
+        merged = merged.merge(
+            fuzzy_enriched[fuzzy_cols].drop(columns=["match_clean"]),
+            on="nom_clean",
+            how="left",
+            suffixes=("", "_fuzzy"),
+        )
 
-    # Matches exacts
-    merged.loc[merged["Type"].isna(), "Similarité"] = 100
-    merged.loc[merged["Type"].isna(), "Type"]        = "Exact"
-    merged["Similarité"] = merged["Similarité"].fillna(0).astype(float)
+    # ── Nettoyage final ──────────────────────────────────────────────────
+    merged["Similarité"] = pd.to_numeric(merged["Similarité"], errors="coerce").fillna(0)
     merged["Type"]       = merged["Type"].fillna("Non réconcilié")
+    for col in ["CD_NOM", "CD_REF", "RANG", "FAMILLE",
+                "NOM_COMPLET", "NOM_VALIDE"] + RANK_COLS:
+        if col in merged.columns:
+            merged[col] = merged[col].fillna("")
 
-    # ── Validation Classification ─────────────────
+    # ── Validation Classification ────────────────────────────────────────
     if has_classif:
         merged["Validation classification"] = merged.apply(
             lambda row: validate_classification(row.get("Classification", ""), row),
