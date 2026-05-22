@@ -24,18 +24,18 @@ st.divider()
 # ─────────────────────────────────────────────
 # Contenu du README embarqué
 # ─────────────────────────────────────────────
-README_MD = """# 🌿 TaxRef Match — Guide utilisateur
+README_MD = """# 🌿 TaxRef Match - Guide utilisateur
 
 ## I. Comment utiliser l'outil
 
 ### Prérequis
 - Un navigateur web (Chrome, Firefox, Edge…)
-- Le fichier **TAXREFv18.txt** (référentiel MNHN, ~300 Mo)
+- Le fichier **TAXREFv18.txt** (référentiel TaxRef version 18, ~300 Mo)
 - Un fichier Excel **(.xlsx)** rempli selon le format attendu
 
 ---
 
-### Étape 1 — Télécharger le template
+### Étape 1 - Télécharger le template
 
 Depuis la page de l'application, cliquez sur **"Télécharger le template (.xlsx)"**.  
 Ce fichier contient les trois colonnes attendues :
@@ -48,7 +48,7 @@ Ce fichier contient les trois colonnes attendues :
 
 ---
 
-### Étape 2 — Remplir le template
+### Étape 2 - Remplir le template
 
 - **`fk`** : laissez vide ou remplissez avec vos propres identifiants. Cette colonne est conservée telle quelle dans le résultat final.
 - **`nom_cite`** : saisissez les noms d'espèces tels que vous les avez (avec ou sans auteur, l'outil ne conserve que Genre + épithète).
@@ -56,7 +56,7 @@ Ce fichier contient les trois colonnes attendues :
 
 ---
 
-### Étape 3 — Lancer le matching
+### Étape 3 - Lancer le matching
 
 1. Uploadez **TAXREFv18.txt** via le premier bouton
 2. Uploadez votre **fichier Excel** via le second bouton
@@ -66,7 +66,7 @@ Ce fichier contient les trois colonnes attendues :
 
 ---
 
-### Étape 4 — Télécharger le résultat
+### Étape 4 - Télécharger le résultat
 
 Cliquez sur **"Télécharger le résultat (.xlsx)"**. Le fichier contient les colonnes suivantes :
 
