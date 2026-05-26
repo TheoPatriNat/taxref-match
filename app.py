@@ -237,10 +237,11 @@ def match_taxref(df, taxref):
 
     # Colonnes de sortie TaxRef
     out_cols = ["nom_clean", "CD_NOM", "CD_REF", "RANG",
-                "FAMILLE", "NOM_COMPLET", "NOM_VALIDE"] + RANK_COLS
+            "NOM_COMPLET", "NOM_VALIDE"] + RANK_COLS
 
     # ── 1. Match exact ────────────────────────────────────────────────
     taxref_lookup = taxref[out_cols].copy()
+    taxref_lookup = taxref_lookup.loc[:, ~taxref_lookup.columns.duplicated()]
 
     # Séparer les lignes qui matchent et celles qui ne matchent pas
     df["_idx"] = df.index
