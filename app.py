@@ -157,9 +157,13 @@ def clean_name(name):
     if pd.isna(name):
         return ""
     parts = str(name).strip().split()
-    if len(parts) >= 2:
-        return (parts[0] + " " + parts[1]).lower()
-    return " ".join(parts).lower()
+    # Ignorer les éléments entre parenthèses (notation sous-genre)
+    filtered = [p for p in parts if not p.startswith("(") and not p.endswith(")")]
+    if len(filtered) >= 2:
+        return (filtered[0] + " " + filtered[1]).lower()
+    elif filtered:
+        return filtered[0].lower()
+    return ""
 
 
 def get_template_bytes():
