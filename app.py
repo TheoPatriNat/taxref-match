@@ -4,11 +4,11 @@ from thefuzz import process
 from collections import defaultdict
 import io
 
-st.set_page_config(page_title="TaxRef Match", page_icon="🌿", layout="wide")
+st.set_page_config(page_title="TaxRef Match", page_icon="🔎", layout="wide")
 
-st.title("🌿 TaxRef Match — v18")
+st.title("🔎 TaxRef Match")
 st.markdown(
-    "Outil de réconciliation de noms d'espèces avec le référentiel **TaxRef v18**. "
+    "Outil de réconciliation de noms d'espèces avec le référentiel **TaxRef**. "
     "Uploadez vos deux fichiers, lancez le matching, puis téléchargez le résultat."
 )
 st.divider()
@@ -16,13 +16,13 @@ st.divider()
 # ─────────────────────────────────────────────
 # README embarqué
 # ─────────────────────────────────────────────
-README_MD = """# 🌿 TaxRef Match — Guide utilisateur
+README_MD = """# 🔎 TaxRef Match - Guide utilisateur
 
 ## I. Comment utiliser l'outil
 
 ### Prérequis
 - Un navigateur web (Chrome, Firefox, Edge…)
-- Le fichier **TAXREFv18.txt** (référentiel MNHN, ~300 Mo)
+- Le fichier **TAXREFv18.txt** (référentiel TaxRef, ~300 Mo)
 - Un fichier Excel **(.xlsx)** rempli selon le format attendu
 
 ---
